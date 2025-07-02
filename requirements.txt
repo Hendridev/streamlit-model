@@ -1,0 +1,17 @@
+pandas
+numpy
+statistics
+seaborn
+matplotlib.pyplot
+scipy.stats
+math
+warnings
+sklearn
+statsmodels.api
+statsmodels.formula.api
+statsmodels.stats.outliers_influence
+regex
+pandas.api.types
+sklearn.base
+pickle
+datetime
