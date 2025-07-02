@@ -26,7 +26,7 @@ from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.metrics import f1_score, confusion_matrix, classification_report, log_loss, roc_auc_score, roc_curve
 from sklearn.pipeline import Pipeline
-import pickle
+import joblib
 warnings.filterwarnings('ignore')
 from datetime import datetime as dt
 
@@ -217,7 +217,6 @@ business_travel_map = {'Non-Travel': 0, 'Travel_Rarely': 1, 'Travel_Frequently':
 # Apply
 x_train['BusinessTravel'] = x_train['BusinessTravel'].map(business_travel_map)
 x_test['BusinessTravel'] = x_test['BusinessTravel'].map(business_travel_map)
-x_val['BusinessTravel'] = x_val['BusinessTravel'].map(business_travel_map)
 
 
 order = [1, 2, 3, 4]
@@ -234,11 +233,9 @@ ohe_columns_2 = cat_columns_2[(~cat_columns_2.isin(ordinal_cat_columns_2))]
 
 x_train[ordinal_cat_columns_2] = x_train[ordinal_cat_columns_2].astype('category')
 x_test[ordinal_cat_columns_2] = x_test[ordinal_cat_columns_2].astype('category')
-x_val[ordinal_cat_columns_2] = x_val[ordinal_cat_columns_2].astype('category')
 
 x_train[ohe_columns_2] = x_train[ohe_columns_2].astype('category')
 x_test[ohe_columns_2] = x_test[ohe_columns_2].astype('category')
-x_val[ohe_columns_2] = x_val[ohe_columns_2].astype('category')
 
 x_train.duplicated().sum()
 x_train.drop_duplicates(inplace=True)
@@ -259,9 +256,6 @@ cat_imputer = Pipeline([
 
 x_train[num_columns_2] = num_imputer.fit_transform(x_train[num_columns_2])
 x_train[cat_columns_2] = cat_imputer.fit_transform(x_train[cat_columns_2])
-
-x_val[num_columns_2] = num_imputer.transform(x_val[num_columns_2])
-x_val[cat_columns_2] = cat_imputer.transform(x_val[cat_columns_2])
 
 x_test[num_columns_2] = num_imputer.transform(x_test[num_columns_2])
 x_test[cat_columns_2] = cat_imputer.transform(x_test[cat_columns_2])
@@ -324,7 +318,6 @@ class StatisticalFeatureSelector(BaseEstimator, TransformerMixin):
 selector = StatisticalFeatureSelector(num_columns_2, cat_columns_2)
 x_train = selector.fit_transform(x_train, y_train)
 x_test = selector.transform(x_test)
-x_val = selector.transform(x_val)
 
 final_num_columns = [col for col in num_columns_2 if col in significants]
 final_cat_columns = [col for col in cat_columns_2 if col in significants]
@@ -352,7 +345,6 @@ num_preprocessor = ColumnTransformer([
 
 x_train[final_num_columns] = num_preprocessor.fit_transform(x_train[final_num_columns])
 x_test[final_num_columns] = num_preprocessor.transform(x_test[final_num_columns])
-x_val[final_num_columns] = num_preprocessor.transform(x_val[final_num_columns])
 
 for col in final_ordinal_cat_columns:
   print(f'{col}: {x_train[col].unique()}')
@@ -370,7 +362,6 @@ ordinal_encode = Pipeline([
 
 x_train[final_ordinal_cat_columns] = ordinal_encode.fit_transform(x_train[final_ordinal_cat_columns])
 x_test[final_ordinal_cat_columns] = ordinal_encode.transform(x_test[final_ordinal_cat_columns])
-x_val[final_ordinal_cat_columns] = ordinal_encode.transform(x_val[final_ordinal_cat_columns])
 
 
 ohe_encode = Pipeline([
@@ -382,11 +373,9 @@ ohe_encode.fit(x_train[final_ohe_columns])
 
 x_train_ohe = ohe_encode.transform(x_train[final_ohe_columns])
 x_test_ohe = ohe_encode.transform(x_test[final_ohe_columns])
-x_val_ohe = ohe_encode.transform(x_val[final_ohe_columns])
 
 x_train_ohe = pd.DataFrame(x_train_ohe.toarray(), columns=ohe_encode.get_feature_names_out())
 x_test_ohe = pd.DataFrame(x_test_ohe.toarray(), columns=ohe_encode.get_feature_names_out())
-x_val_ohe = pd.DataFrame(x_val_ohe.toarray(), columns=ohe_encode.get_feature_names_out())
 
 x_train = x_train.drop(columns=final_ohe_columns)
 x_train = pd.merge(x_train, x_train_ohe, on=x_train.index)
@@ -395,14 +384,9 @@ x_train.index = x_train.pop('key_0')
 x_test = x_test.drop(columns=final_ohe_columns)
 x_test = pd.merge(x_test, x_test_ohe, on=x_test.index)
 x_test.index = x_test.pop('key_0')
-
-x_val = x_val.drop(columns=final_ohe_columns)
-x_val = pd.merge(x_val, x_val_ohe, on=x_val.index)
-x_val.index = x_val.pop('key_0')
 # remove index name
 x_train.index.name = None
 x_test.index.name = None
-x_val.index.name = None
 
 preprocessor = ColumnTransformer([
 	('num', num_preprocessor, final_num_columns),
@@ -412,7 +396,7 @@ preprocessor = ColumnTransformer([
 
 
 model = joblib.load("tuned_classifier.pkl")
-res = model.predict(x_val)
+res = model.predict(x_test)
 res = pd.DataFrame(res, columns=['Attrition'])
 res['Attrition'] = res['Attrition'].map({1: 'Yes', 0: 'No'})
 res
