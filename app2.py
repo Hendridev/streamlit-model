@@ -26,6 +26,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.metrics import f1_score, confusion_matrix, classification_report, log_loss, roc_auc_score, roc_curve
 from sklearn.pipeline import Pipeline
 import pickle
+import xlsxwriter
 import joblib # Pastikan joblib diimpor
 import io     # Diperlukan untuk fitur unduh
 warnings.filterwarnings('ignore')

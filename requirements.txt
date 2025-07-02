@@ -9,3 +9,4 @@ statsmodels
 regex
 streamlit
 joblib
+xlsxwriter
